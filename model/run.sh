@@ -1,6 +1,6 @@
 xhost +
 
-DATA_FOLDER="$HOME/Downloads/cropped_/"
+DATA_FOLDER="$PWD/data/cropped_/"
 
 docker  run \
         -it \

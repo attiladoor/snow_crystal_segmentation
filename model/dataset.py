@@ -17,22 +17,20 @@ class DataPaths:
 
 
 def get_data_paths(base_dir, split_ratio=0.15):
-
     total_input_img_paths = []
     total_target_img_paths = []
 
     for f in FOLDERS:
-
         dataset_dir = os.path.join(base_dir, f)
 
-        input_dir = os.path.join(dataset_dir, "cropped_originals")
+        input_dir = os.path.join(dataset_dir, "cropped_original_png")
         target_dir = os.path.join(dataset_dir, "cropped_contours")
 
         input_img_paths = sorted(
             [
                 os.path.join(input_dir, fname)
                 for fname in os.listdir(input_dir)
-                if fname.endswith(".tif")
+                if fname.endswith(".png")
             ]
         )
         target_img_paths = sorted(
@@ -113,30 +111,30 @@ class CropsDataset(keras.utils.Sequence):
             input_img = load_img(
                 input_path, target_size=self.img_size, color_mode="grayscale"
             )
-
-            input_img_np_norm = np.array(input_img, dtype=np.float32) / 255.0
-            x[j] = input_img_np_norm
+            input_img_np_norm_gray = np.array(input_img).astype(np.float32)
+            h, w = input_img_np_norm_gray.shape
+            x[j, 0:h, 0:w] = (
+                np.expand_dims(input_img_np_norm_gray[:, :], axis=2) / 65535.0
+            )  # normalize 16bit data
 
         y = np.zeros((self.batch_size,) + self.img_size, dtype="uint8")
         for j, path in enumerate(batch_target_img_paths):
             img = load_img(path, target_size=self.img_size, color_mode="grayscale")
-            np_img = np.array(img, dtype=np.uint8) / 255.0
-            y[j] = np_img
+            np_img = np.array(img, dtype=np.uint8) / 255
+            h, w = np_img.shape
+            y[j, 0:h, 0:w] = 1 - np_img
 
         return self.do_augmentation(x, y)
 
     @tf.function
     def do_augmentation(self, input_image, input_mask):
-
         input_mask = tf.expand_dims(input_mask, axis=3)
 
         if self.do_augment:
-
             CROP_H = 864
             CROP_W = 1152
 
             if tf.random.uniform(()) > 0.5:
-
                 offset_height = int((self.img_size[0] - CROP_H) * tf.random.uniform(()))
                 offset_width = int((self.img_size[1] - CROP_W) * tf.random.uniform(()))
 

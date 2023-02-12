@@ -26,7 +26,6 @@ epochs = 4
 
 
 def main(args):
-
     # Free up RAM in case the model definition cells were run multiple times
     keras.backend.clear_session()
 
@@ -34,7 +33,7 @@ def main(args):
     # model = get_model(img_size, num_classes)
     model = sm.Linknet(
         "resnet18",
-        input_shape=(model_size[0], model_size[1], 4),
+        input_shape=(model_size[0], model_size[1], 1),
         classes=num_classes,
         activation="sigmoid",
         encoder_weights=None,
@@ -99,7 +98,7 @@ def main(args):
             "Validation images", os.path.join(args.output_folder, "logs"), val_gen[0]
         ),
         OverlayWriter(
-            "Train images", os.path.join(args.output_folder, "logs"), train_gen[12]
+            "Train images", os.path.join(args.output_folder, "logs"), train_gen[0]
         ),
         keras.callbacks.LearningRateScheduler(scheduler),
     ]
@@ -110,7 +109,7 @@ def main(args):
     model.save(os.path.join(args.output_folder, "model_file"))
     input_signature = (
         tf.TensorSpec(
-            (None, model_size[0], model_size[1], 4),
+            (None, model_size[0], model_size[1], 1),
             tf.float32,
             name="image_input",
         ),

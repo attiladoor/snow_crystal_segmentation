@@ -13,7 +13,6 @@ class OverlayWriter(keras.callbacks.Callback):
         self._create_writer()
 
     def _create_writer(self):
-
         self.writer = tf.summary.create_file_writer(
             self.logdir,
             max_queue=None,
@@ -24,17 +23,19 @@ class OverlayWriter(keras.callbacks.Callback):
         )
 
     def on_epoch_end(self, epoch, logs=None):
-
-        predictions_multi_channel = self.model.predict(self.samples[0])
+        predictions = self.model.predict(self.samples[0])
         samples_float = self.samples[0]
 
+        sample_3ch = tf.image.grayscale_to_rgb(samples_float, name=None)
+
         red_ch = tf.where(
-            predictions_multi_channel[:, :, :, 0] > 0.5,
-            tf.ones_like(predictions_multi_channel[:, :, :, 0]),
-            samples_float[:, :, :, 0],
+            predictions[:, :, :, 0] > 0.5,
+            tf.ones_like(predictions[:, :, :, 0]),
+            sample_3ch[:, :, :, 0],
         )
+
         samples_overlay = tf.stack(
-            [red_ch, samples_float[:, :, :, 1], samples_float[:, :, :, 2]], axis=3
+            [red_ch, sample_3ch[:, :, :, 1], sample_3ch[:, :, :, 2]], axis=3
         )
 
         with self.writer.as_default():
@@ -43,14 +44,14 @@ class OverlayWriter(keras.callbacks.Callback):
         red_ch_annot = tf.where(
             self.samples[1][:, :, :, 0] > 0,
             tf.cast(self.samples[1][:, :, :, 0], tf.float32),
-            samples_float[:, :, :, 0],
+            sample_3ch[:, :, :, 0],
         )
 
         samples_overlay_gt = tf.stack(
             [
                 red_ch_annot,
-                samples_float[:, :, :, 1],
-                samples_float[:, :, :, 2],
+                sample_3ch[:, :, :, 1],
+                sample_3ch[:, :, :, 2],
             ],
             axis=3,
         )
