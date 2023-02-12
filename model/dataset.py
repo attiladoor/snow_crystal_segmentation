@@ -113,9 +113,15 @@ class CropsDataset(keras.utils.Sequence):
             )
             input_img_np_norm_gray = np.array(input_img).astype(np.float32)
             h, w = input_img_np_norm_gray.shape
+
+            norm_value = (
+                np.iinfo(np.uint16).max
+                if np.max(input_img_np_norm_gray) > np.iinfo(np.uint8).max
+                else np.iinfo(np.uint8).max
+            )
             x[j, 0:h, 0:w] = (
-                np.expand_dims(input_img_np_norm_gray[:, :], axis=2) / 65535.0
-            )  # normalize 16bit data
+                np.expand_dims(input_img_np_norm_gray[:, :], axis=2) / norm_value
+            )  # normalize data
 
         y = np.zeros((self.batch_size,) + self.img_size, dtype="uint8")
         for j, path in enumerate(batch_target_img_paths):

@@ -11,8 +11,9 @@ docker  run \
         -v $PWD:$PWD \
         -v $DATA_FOLDER:$DATA_FOLDER \
         -p 8888:8888 \
+        -p 6006:6006 \
         --name trainer \
         --rm \
-        cuda-tensorflow /bin/bash -c "python3 ${PWD}/model/train.py --data_folder $DATA_FOLDER --output_folder $PWD/training-out/training"
+        cuda-tensorflow /bin/bash -c "python3 ${PWD}/model/train.py --data_folder $DATA_FOLDER --output_folder $PWD/training && \
+        tensorboard --logdir_spec $PWD/training"
 
-#tensorboard --logdir_spec $PWD/build/training

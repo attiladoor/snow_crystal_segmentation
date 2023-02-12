@@ -22,7 +22,7 @@ model_size = (
 )
 num_classes = 1
 batch_size = 4
-epochs = 4
+epochs = 10
 
 
 def main(args):
@@ -39,7 +39,7 @@ def main(args):
         encoder_weights=None,
         decoder_filters=(256, 128, 64, 32, 16),
     )
-    # model.summary()
+    model.summary()
 
     train_paths, eval_paths = dataset.get_data_paths(args.data_folder)
 
@@ -58,12 +58,9 @@ def main(args):
     print("train set length: ", len(train_gen))
     print("Validation set length: ", len(val_gen))
 
-    # Configure the model for training.
-    # We use the "sparse" version of categorical_crossentropy
-    # because our target data is integers.
     model.compile(
         optimizer="adam",
-        loss=binary_losses.binary_tversky_loss(beta=0.3),
+        loss=binary_losses.binary_tversky_loss(beta=0.5),
         metrics=[metrics.fp, metrics.recall, metrics.prec],
     )
     input_signature = (
@@ -82,7 +79,7 @@ def main(args):
     onnx.save(onnx_model, os.path.join(args.output_folder, "model_init.onnx"))
 
     def scheduler(epoch, lr):
-        if epoch < epochs - 2:
+        if epoch < epochs - 4:
             return lr
         else:
             return lr * tf.math.exp(-0.1)
