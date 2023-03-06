@@ -32,7 +32,7 @@ def main(args):
     # Build model
     # model = get_model(img_size, num_classes)
     model = sm.Linknet(
-        "resnet18",
+        "resnet152",
         input_shape=(model_size[0], model_size[1], 1),
         classes=num_classes,
         activation="sigmoid",
@@ -86,7 +86,7 @@ def main(args):
 
     callbacks = [
         keras.callbacks.ModelCheckpoint(
-            os.path.join(args.output_folder, "tractor_model.h5"), save_best_only=True
+            os.path.join(args.output_folder, "ice_crystals_model.h5"), save_best_only=True
         ),
         keras.callbacks.TensorBoard(
             log_dir=os.path.join(args.output_folder, "logs"), histogram_freq=1
