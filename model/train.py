@@ -60,7 +60,7 @@ def main(args):
 
     model.compile(
         optimizer="adam",
-        loss=binary_losses.binary_tversky_loss(beta=0.5),
+        loss=binary_losses.binary_tversky_loss(beta=0.6),  # increase recall
         metrics=[metrics.fp, metrics.recall, metrics.prec],
     )
     input_signature = (
