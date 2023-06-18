@@ -6,6 +6,7 @@ import tensorflow_addons as tfa
 import os
 import random
 from dataclasses import dataclass
+from PIL import Image
 
 FOLDERS = ["batch_1"]
 
@@ -56,8 +57,17 @@ def get_data_paths(base_dir, split_ratio=0.15):
             f"Warning: {len(input_img_paths) - len(input_img_path_to_keep)} input images are ommited"
         )
 
-        total_input_img_paths += input_img_path_to_keep
-        total_target_img_paths += target_img_paths
+        img_non_zero = []
+        target_non_zero = []
+        for target_path, img_path in zip(target_img_paths, input_img_path_to_keep):
+            with Image.open(target_path) as im:
+                np_img = np.array(im)
+                if (np_img == 0).any():
+                    img_non_zero.append(img_path)
+                    target_non_zero.append(target_path)
+
+        total_input_img_paths += img_non_zero
+        total_target_img_paths += target_non_zero
 
     assert len(total_input_img_paths) == len(
         total_target_img_paths
