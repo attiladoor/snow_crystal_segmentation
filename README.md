@@ -21,4 +21,5 @@ docker build -t cuda-tensorflow .
 Modify the *DATA_FOLDER* variable in the *model/run.sh* file and just run it as
 ```bash
 ./model/run.sh
+./tools/run_inference.sh
 ``` 
