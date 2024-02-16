@@ -7,11 +7,8 @@ import cv2
 import os
 import tqdm
 import numpy as np
-<<<<<<< HEAD
 from pathlib import Path
 import math
-=======
->>>>>>> 996210704901de6ebba7e101a3e16ba1600aae41
 
 model_size = (
     960,
@@ -43,7 +40,6 @@ def main(args):
         ],
     )
 
-<<<<<<< HEAD
     # CREATE FOLDER IF ID DOESNT EXIST
     folder_names = ["particles", "mask", "bbox", "overlay", "mask_particle"]
 
@@ -173,7 +169,7 @@ def main(args):
                 
                 # write the contour file
                 cv2.imwrite(os.path.join(args.output_folder, f"contour_{img_name}"), contour)
-=======
+
     for img_name in tqdm.tqdm(os.listdir(args.input_folder)):
         img_path = os.path.join(args.input_folder, img_name)
         if img_path.endswith(".png"):
@@ -203,7 +199,6 @@ def main(args):
             cv2.imwrite(
                 os.path.join(args.output_folder, f"overlay_{img_name}"), img_3ch
             )
->>>>>>> 996210704901de6ebba7e101a3e16ba1600aae41
 
 
 def parse_args(args: List[str]):
@@ -235,10 +230,6 @@ def parse_args(args: List[str]):
 
     return parser.parse_args(args)
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 996210704901de6ebba7e101a3e16ba1600aae41
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
     main(args)
