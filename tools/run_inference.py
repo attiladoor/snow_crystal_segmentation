@@ -168,7 +168,7 @@ def main(args):
                         )
                 
                 # write the contour file
-                cv2.imwrite(os.path.join(args.output_folder, f"contour_{img_name}"), contour)
+#                cv2.imwrite(os.path.join(args.output_folder, f"contour_{img_name}"), contour)
 
     for img_name in tqdm.tqdm(os.listdir(args.input_folder)):
         img_path = os.path.join(args.input_folder, img_name)
