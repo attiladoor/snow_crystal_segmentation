@@ -138,7 +138,6 @@ def main(args):
                         min_dia = 2 * math.sqrt((dim_x * dim_y) / math.pi) * px_res
                         max_dia = math.sqrt((dim_x * dim_x) + (dim_y * dim_y)) * px_res
 
-
                         file.write(f"{str(img_name)[:18]}_{counter} " +
                                 f"{aspect_ratio} " +
                                 f"{particle.size} " +
@@ -151,11 +150,11 @@ def main(args):
                         file.write(f"{str(img_name)[:18]}: "+ "no_particle" + "\n")
                     counter = counter + 1
 
-                cv2.imwrite(str(Path(args.output_folder) /
-                    "bbox" /
-                    f"box_{img_name}"),
-                    box
-                    )
+#                cv2.imwrite(str(Path(args.output_folder) /
+#                    "bbox" /
+#                    f"box_{img_name}"),
+#                    box
+#                    )
                 
                 img_3ch = cv2.cvtColor(img_u8, cv2.COLOR_GRAY2BGR)
                 overlay = _merge_images(img_3ch[:, :, 2], mask)
@@ -168,38 +167,10 @@ def main(args):
                         )
                 
                 # write the contour file
-#                cv2.imwrite(os.path.join(args.output_folder, f"contour_{img_name}"), contour)
-
-    for img_name in tqdm.tqdm(os.listdir(args.input_folder)):
-        img_path = os.path.join(args.input_folder, img_name)
-        if img_path.endswith(".png"):
-            img_u8 = cv2.imread(img_path)
-            if img_u8.shape[-1] == 3:
-                img_u8 = cv2.cvtColor(img_u8, cv2.COLOR_BGR2GRAY)
-
-            norm_value = (
-                np.iinfo(np.uint16).max
-                if np.max(img_u8) > np.iinfo(np.uint8).max
-                else np.iinfo(np.uint8).max
-            )
-            img_fp = img_u8.astype(dtype=np.float32) / norm_value
-            input = np.zeros((1, 960, 1280, 1), dtype=np.float32)
-
-            input[0, :, :, 0] = _merge_images(input[0, :, :, 0], img_fp)
-            output = model.run(None, {"image_input": input})[0][0]
-            mask_model_size = np.array(255 * (output[:, :, 0] >= 0.5), dtype=np.uint8)
-
-            mask = np.zeros(img_fp.shape)
-            mask = _merge_images(mask, mask_model_size)
-            cv2.imwrite(os.path.join(args.output_folder, f"mask_{img_name}"), mask)
-
-            img_3ch = cv2.cvtColor(img_u8, cv2.COLOR_GRAY2BGR)
-            overlay = _merge_images(img_3ch[:, :, 2], mask)
-            img_3ch[:, :, 2] = np.where(overlay, 255, img_3ch[:, :, 2])
-            cv2.imwrite(
-                os.path.join(args.output_folder, f"overlay_{img_name}"), img_3ch
-            )
-
+                cv2.imwrite(str(Path(args.output_folder) /
+			"bbox" / 
+			f"contour_{img_name}"),
+			contour)
 
 def parse_args(args: List[str]):
 
