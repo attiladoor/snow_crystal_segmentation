@@ -40,6 +40,8 @@ def main(args):
         ],
     )
 
+    train_paths, eval_paths = dataset.get_data_paths("/home/stejan/image_analysis/cropped_originals")
+
     # CREATE FOLDER IF ID DOESNT EXIST
     folder_names = ["particles", "mask", "bbox", "overlay", "mask_particle"]
 
@@ -57,8 +59,8 @@ def main(args):
     with open(str(args.output_folder) + "/particles.txt", "w") as file:
         file.write("image_id " + "aspect_ratio " + "size " + "aed " + "min_dia " + "max_dia "  + "\n")
     
-        for img_name in tqdm.tqdm(os.listdir(args.input_folder)):
-            img_path = os.path.join(args.input_folder, img_name)
+        for img_path in tqdm.tqdm(eval_paths):
+            img_name = Path(img_path).stem # os.path.join(args.input_folder, img_name)
             if img_path.endswith(".png"):
                 img_u8c = cv2.imread(img_path)
                 if img_u8c.shape[-1] == 3:

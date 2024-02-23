@@ -167,9 +167,9 @@ class CropsDataset(keras.utils.Sequence):
                 input_mask = tf.image.resize(input_mask, self.img_size)
                 input_mask = tf.cast(input_mask, tf.uint8)
             # random brightness adjustment illumination
-            input_image = tf.image.random_brightness(input_image, 0.3, seed=1121)
+            input_image = tf.image.random_brightness(input_image, 0.5, seed=1121)
             # random contrast adjustment
-            input_image = tf.image.random_contrast(input_image, 0.8, 1)
+            input_image = tf.image.random_contrast(input_image, 0.5, 1.5)
             if tf.random.uniform(()) > 0.5:
                 input_image = tf.image.flip_left_right(input_image)
                 input_mask = tf.image.flip_left_right(input_mask)

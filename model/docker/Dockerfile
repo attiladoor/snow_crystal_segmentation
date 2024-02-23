@@ -38,7 +38,7 @@ RUN pip3 install \
         tf2onnx \
         onnxruntime-gpu \
         onnx \
-        gitpython
+        GitPython
 
 
 COPY update_resnet_init_filters.patch /
