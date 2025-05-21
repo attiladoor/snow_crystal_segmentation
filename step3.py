@@ -12,9 +12,9 @@ x - length - in pixels
 y - width - in pixels
 border - Particle is on border(1) or not(0)?
 """""""""
-import sys
-from typing import List
-import argparse
+#import sys
+#from typing import List
+#import argparse 
 from pathlib import Path
 import cv2
 import os
@@ -24,15 +24,21 @@ from pathlib import Path
 import math
 import shutil
 
-#input_folder = "/home/stejan/snow_crystal_segmentation/step1_output/ltu22/cropped_original_png/"
-input_folder = "/home/stejan/snow_crystal_segmentation/LTU23"
-#input_folder = "/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_original_png"
-contour_folder = "/home/stejan/snow_crystal_segmentation/step1_output/ltu23/cropped_contours/"
-#contour_folder = "/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_contours"
-output_folder = "/home/stejan/snow_crystal_segmentation/step2_output/ltu23"
-#output_folder = "/home/stejan/snow_crystal_segmentation/step2_output/ltu22"
+input_folder = Path("/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_original_png")
+#input_folder = Path("/home/stejan/snow_crystal_segmentation/ltu24")
+#input_folder = Path("/home/stejan/snow_crystal_segmentation/ltu23")
 
-debug = 0
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/ltu24/cropped_contours/")
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_contours")
+contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/training_data/cropped_contours")
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/ltu23/cropped_contours/")
+
+#output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/ltu24")
+#output_folder = "/home/stejan/snow_crystal_segmentation/step2_output/ltu22"
+#output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/ltu23")
+output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/training_data")
+
+debug = 0 
 px_res = 1.65
 threshold = 20 / px_res
 scale = 0.75
@@ -73,8 +79,13 @@ for folder_name in folder_names:
         os.mkdir(folder_path)
         print(f"Creating folder: {folder_name}")
 
-    ### CREATE TEXTFILE
-with open(str(output_folder) + "/particles.txt", "w") as file:
+# Add the model_name as a suffix
+#example_file = next(contour_folder.glob("*.png"))
+#version = "_" + example_file.stem.split("_")[-1]
+version = ""
+
+### CREATE TEXTFILE
+with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
     file.write(
         "Particle_ID " + 
         "aspect_ratio " + 
@@ -93,18 +104,24 @@ with open(str(output_folder) + "/particles.txt", "w") as file:
     )
 
     for image_files in tqdm.tqdm(os.listdir(input_folder)):
-        if debug == 1:
-            print(f"Original file: {image_files}\n")
         img_path = (os.path.join(input_folder, image_files))
         img_name = Path(img_path).stem
+        if debug == 1:
+            print(f"Original file: {image_files}\n")
+            print(f"{img_path=}\n")       
 
         if not img_path.endswith(".png"):
             print("...will be skipped")
         else:
-            img_u8c = cv2.imread(img_path)
-            if img_u8c.shape[-1] == 3:
+            img_name_4contour = Path(image_files)
+            img_u8c = cv2.imread(str(img_path))
+            try:
+                #img_u8c.shape[-1] == 3
                 img_u8 = cv2.cvtColor(img_u8c, cv2.COLOR_BGR2GRAY)
-
+            except:
+                shape = img_u8.shape
+                print(f"Countour image shape is wrong: {shape}")  
+            
             norm_value = (
                 np.iinfo(np.uint16).max
                 if np.max(img_u8) > np.iinfo(np.uint8).max
@@ -112,10 +129,18 @@ with open(str(output_folder) + "/particles.txt", "w") as file:
             )
 
             img_fp = img_u8.astype(dtype=np.float32) / norm_value
-            
-            contour_name = image_files #"mask_" + image_files
+            # Add the model_name as a suffix
+            #            example_file = next(contour_folder.glob("*.png"))
+            #            version = "_" + example_file.stem.split("_")[-1]
+
+            contour_name = f"{img_name_4contour.stem}{version}{img_name_4contour.suffix}"
             contour_path = os.path.join(contour_folder, contour_name)
+            
+            if debug == 1:
+                print(f"{contour_path=}\n")
             binary_image = cv2.imread(contour_path, cv2.IMREAD_GRAYSCALE)
+            #print(f"{binary_image=}\n")
+            
             if binary_image is None:
                 continue
 
@@ -146,8 +171,9 @@ with open(str(output_folder) + "/particles.txt", "w") as file:
             contour_image = img_u8c.copy()
             contour = cv2.drawContours(contour_image, contours, -1, (0,255,0), 1)
             contour2 = img_u8c.copy()
-            counter = 1
-             
+            counter = 1 # Only particles that bigger than the treshold, total particles on the image
+            counter_total = 1 # Any object on the image 
+                         
             for contour_box in filtered_contours:
                 rect = cv2.minAreaRect(contour_box)
                 center_rot, size_rot, angle_rot = rect
@@ -158,7 +184,8 @@ with open(str(output_folder) + "/particles.txt", "w") as file:
                 if w_rot < threshold or h_rot < threshold:
                     file.write(f"{str(img_name)}_000 " + "particle smaller than 10um"
                             f", minAreaRect: {rect}\n")
-                    print(f"{str(img_name)}_000 NOT exported: minAreaRect: {rect}\n")
+                    #print(f"{str(img_name)}_000 NOT exported: minAreaRect: {rect}\n")
+                    counter_total = counter_total + 1
                     continue
 
                 # TK DRAW THIS FIRST (then contour): Draw rectangle around the contour
@@ -254,7 +281,7 @@ with open(str(output_folder) + "/particles.txt", "w") as file:
 ########################################################## DEBUG
 
                 if debug == 1:
-                    print(f"particle name: {str(img_name)}_{counter} \n" 
+                    print(f"particle name: {str(img_name)}_{counter_total} \n" 
 #                      f"M:  {M} \n"
 #                      f"image_dtype: {img_u8c.dtype} \n" 
                       f"particle shape: {particle.shape} \n"
@@ -278,25 +305,25 @@ with open(str(output_folder) + "/particles.txt", "w") as file:
                 cv2.imwrite(
                     str(Path(output_folder) /
                             "particles" /
-                            f"particle_{str(img_name)}_{counter}.png"),
+                            f"particle_{str(img_name)}_{counter_total}.png"),
                             particle
                             )
                 cv2.imwrite(
                         str(Path(output_folder) /
                             "mask_particle" /
-                            f"particle_mask{str(img_name)}_{counter}.png"),
+                            f"particle_mask{str(img_name)}_{counter_total}.png"),
                             particle_mask
                             )
                 cv2.imwrite(
                         str(Path(output_folder) /
                             "contoured_particle" /
-                            f"particle_{str(img_name)}_{counter}.png"),
+                            f"particle_{str(img_name)}_{counter_total}.png"),
                             particle_contour
                             )
                 cv2.imwrite(
                         str(Path(output_folder) /
                             "nonscaled_particle" /
-                            f"particle_{str(img_name)}_{counter}.png"),
+                            f"particle_{str(img_name)}_{counter_total}.png"),
                             particle_nonscaled
                             ) 
                 ## calculate the aspect ratio of particles that is defined by the ratio of the 2 length of the bounding box that encapsulates the particle.
@@ -316,7 +343,36 @@ with open(str(output_folder) + "/particles.txt", "w") as file:
                     # Area ratio
                 area_ratio = particle_area3 / (math.pi/4 * max_dim**2)
                     
-                file.write(f"{str(img_name)}_{counter} " +
+                    # Number of particles on the image
+                sum_particles = counter
+
+#                    print("particle EXPORTED \n")       
+
+#                else:
+#                    file.write(f"{str(img_name)}_{counter} "+ "particle smaller than 10um"+ "\n")
+#                    print(f"\n {str(img_name)}_{counter} NOT exported \n")
+
+				# Write the particle numbers on the image                
+                cv2.putText(
+                    contour_image,
+                    f"{counter_total}",
+                    (int(x), int(y)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (0,0,255),
+                    2,
+                    cv2.LINE_AA
+                    )                
+
+                cv2.imwrite(str(Path(output_folder) /
+                    "bbox" /
+                    f"box_{image_files}"),
+                    contour_image
+                    )
+                counter = counter + 1
+                counter_total = counter_total + 1
+
+                file.write(f"{str(img_name)}_{counter_total} " +
                             f"{aspect_ratio} " +
                             f"{aed} " +
                             f"{min_dia} " +
@@ -332,31 +388,8 @@ with open(str(output_folder) + "/particles.txt", "w") as file:
                             "\n" 
                             )
 
-#                    print("particle EXPORTED \n")       
 
-#                else:
-#                    file.write(f"{str(img_name)}_{counter} "+ "particle smaller than 10um"+ "\n")
-#                    print(f"\n {str(img_name)}_{counter} NOT exported \n")
 
-				# Write the particle numbers on the image                
-                cv2.putText(
-                    contour_image,
-                    f"{counter}",
-                    (int(x), int(y)),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    (0,0,255),
-                    2,
-                    cv2.LINE_AA
-                    )                
-
-                cv2.imwrite(str(Path(output_folder) /
-                    "bbox" /
-                    f"box_{image_files}"),
-                    contour_image
-                    )
-                counter = counter + 1
-            
 			### FIND THE SMALLEST CIRCLE/FERRET DIAMETER
             for bounding_circle in contours:
                

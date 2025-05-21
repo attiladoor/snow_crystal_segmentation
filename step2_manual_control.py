@@ -2,29 +2,49 @@ import cv2
 import numpy as np
 import os
 import shutil
+from pathlib import Path
+
 
 # Folder paths
 #original_folder = "/home/stejan/snow_crystal_segmentation/ltu18-21"
-original_folder = "/home/stejan/snow_crystal_segmentation/LTU23"
+#original_folder = Path("/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_original_png")
+original_folder = Path("/home/stejan/snow_crystal_segmentation/LTU22")
 #contour_folder = "/home/stejan/snow_crystal_segmentation/scs_out/ltu18-21/mask"
 #output_folder = "/home/stejan/snow_crystal_segmentation/step1_output/ltu18-21"
 #output_folder = "/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1"
+#original_folder = Path("/home/stejan/snow_crystal_segmentation/ltu24")
 
-contour_folder = "/home/stejan/snow_crystal_segmentation/scs_out/ltu23/mask"
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/scs_out/ltu23_step1/mask")
+contour_folder = Path("/home/stejan/snow_crystal_segmentation/scs_out/ltu22/mask")
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_contours")
+
 #output_folder = "/home/stejan/snow_crystal_segmentation/step1_output/ltu18-21"
-output_folder = "/home/stejan/snow_crystal_segmentation/step1_output/ltu23"
+output_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/ltu22/")
+#output_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/ltu24")
+#output_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/training_data")
 
-# Get image lists (assuming they have the same names)
+## Get image lists (assuming they have the same names)
+# read in the model name that is an extra suffix on the contour images
 original_images = sorted(os.listdir(original_folder))
 contour_images = sorted(os.listdir(contour_folder))
 
-# Ensure output folder exists
+#  Ensure output folder exists
 os.makedirs(output_folder, exist_ok=True)
 
+
 # delete the extra files in case it was deleted already by another run over the data
-check_original = set(os.listdir(original_folder))
-check_contour = set(os.listdir(contour_folder))
-extra_files = check_contour - check_original
+check_original = {f for f in original_folder.iterdir() if f.is_file()}
+check_contour = {f for f in contour_folder.iterdir() if f.is_file()}
+
+normalized_contours = {
+        "_".join(p.stem.split("_")[:-1]) + p.suffix
+        for p in check_contour
+        }
+
+normalized_originals = {p.name for p in check_original}
+
+extra_files = normalized_contours - normalized_originals
+
 if extra_files:
     for files in extra_files:
         file_path = os.path.join(contour_folder, files)
@@ -76,7 +96,6 @@ for orig_name, contour_name in zip(original_images, contour_images):
     contour = cv2.imread(os.path.join(contour_folder, contour_name))
     original_path = os.path.join(original_folder, orig_name)
     contour_path = os.path.join(contour_folder, contour_name)
-#    os.chmod(contour_path, stat.S_IWUSR)
 
     # Ensure images have the same dimensions
     if original.shape != contour.shape:
@@ -90,7 +109,6 @@ for orig_name, contour_name in zip(original_images, contour_images):
  
     while True:
         # Convert grayscale to colour
-#        coloured_contour = cv2.cvtColor(contour, cv2.COLOR_GRAY2BGR)
         contour_display = contour.copy()
         black_pixels = (contour[:, :, 0] == 0) & (contour[:, :, 1] == 0) & (contour[:, :, 2] == 0) 
         contour_display[black_pixels] = [175, 0, 75]

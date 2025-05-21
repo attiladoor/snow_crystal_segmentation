@@ -46,10 +46,6 @@ def _merge_images(orignal, add):
         ), f"Inconsistent shapes, cannot crop or fill {add_shape} vs {model_size}"
     return orignal
 
-def model_version(input):
-    with open("mode_version.txt", "w") as f:
-        f.write(f"Model version: {input}")
-
 def main(args):
     model = ort.InferenceSession(
         str(args.model),
@@ -58,9 +54,10 @@ def main(args):
             "CPUExecutionProvider",
         ],
     )
-
     # CREATE FOLDER IF ID DOESNT EXIST
     folder_names = ["mask"]
+    # PRINT THE VERSION OF THE MODEL
+    version = args.model.parent.name
 
     if os.path.exists(args.output_folder): 
         shutil.rmtree(args.output_folder)
@@ -78,6 +75,7 @@ def main(args):
     for image_files in tqdm.tqdm(os.listdir(args.input_folder)):
         img_path = (os.path.join(args.input_folder, image_files))
         img_name = Path(img_path).stem
+        
         if img_path.endswith(".png"):
             img_u8c = cv2.imread(img_path)
             if img_u8c.shape[-1] == 3:
@@ -100,10 +98,12 @@ def main(args):
             mask = np.zeros(img_fp.shape)
             mask = _merge_images(mask, mask_model_size)
             mask = cv2.bitwise_not(mask) # Invert B/W
+            p = Path(image_files)
+            save_name = f"{p.stem}_{version}{p.suffix}"
             cv2.imwrite(
                     str(Path(args.output_folder) /
                         "mask" /
-                        f"{image_files}"),
+                        f"{save_name}"),
                         mask
                         )
 
@@ -139,4 +139,3 @@ def parse_args(args: List[str]):
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
     main(args)
-    model_version(args)

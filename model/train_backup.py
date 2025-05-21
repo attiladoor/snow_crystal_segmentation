@@ -14,27 +14,16 @@ import metrics
 import segmentation_models as sm
 import onnx
 import tf2onnx
-#import logger
-#from tensorflow.keras import metrics
-#from tensorflow.keras.metrics import BinaryAccuracy, FalsePositives, Recall, Precision
-from tensorflow.keras.callbacks import EarlyStopping
+import logger
 
 model_size = (
     960,
     1280,
 )
 num_classes = 1
-batch_size = 4
-epochs = 20 
+batch_size = 4 
+epochs = 10
 
-
-early_stopping = EarlyStopping(
-            monitor="loss",
-            patience=20,
-            mode="min", # Stop when the monitored quantity stops decreasing
-            verbose=1, # Display log messages when early stopping is triggered
-            restore_best_weights=True # REstore the model weights from the epoch with the best value of the monitored quality
-            )
 
 def main(args):
     # Free up RAM in case the model definition cells were run multiple times
@@ -43,7 +32,7 @@ def main(args):
     # Build model
     # model = get_model(img_size, num_classes)
     model = sm.Linknet(
-        "resnet50",
+        "resnet152",
         input_shape=(model_size[0], model_size[1], 1),
         classes=num_classes,
         activation="sigmoid",
@@ -71,8 +60,8 @@ def main(args):
 
     model.compile(
         optimizer="adam",
-        loss=binary_losses.binary_tversky_loss(beta=0.5),  # increase recall
-        metrics=[metrics.accuracy, metrics.fp, metrics.recall, metrics.prec],
+        loss=binary_losses.binary_tversky_loss(beta=0.6),  # increase recall
+        metrics=[metrics.fp, metrics.recall, metrics.prec],
     )
     input_signature = (
         tf.TensorSpec(
@@ -94,12 +83,10 @@ def main(args):
             return lr
         else:
             return lr * tf.math.exp(-0.1)
-    
-    
 
     callbacks = [
         keras.callbacks.ModelCheckpoint(
-            os.path.join(args.output_folder, "crystal_model.h5"), save_best_only=True
+            os.path.join(args.output_folder, "tractor_model.h5"), save_best_only=True
         ),
         keras.callbacks.TensorBoard(
             log_dir=os.path.join(args.output_folder, "logs"), histogram_freq=1
@@ -111,21 +98,10 @@ def main(args):
             "Train images", os.path.join(args.output_folder, "logs"), train_gen[0]
         ),
         keras.callbacks.LearningRateScheduler(scheduler),
-        keras.callbacks.EarlyStopping(
-            monitor="loss",
-            patience=2, # After how many epoch should it stop
-            mode="min", # Stop when the monitored quantity stops decreasing
-            verbose=1, # Display log messages when early stopping is triggered
-            restore_best_weights=True # REstore the model weights from the epoch with the best value of the monitored quality
-            )
     ]
 
     # Train the model, doing validation at the end of each epoch.
-    model.fit(train_gen, 
-        epochs=epochs, 
-        validation_data=val_gen, 
-        callbacks=callbacks
-        )
+    model.fit(train_gen, epochs=epochs, validation_data=val_gen, callbacks=callbacks)
 
     model.save(os.path.join(args.output_folder, "model_file"))
     input_signature = (

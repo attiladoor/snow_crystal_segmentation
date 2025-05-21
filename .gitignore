@@ -1,2 +1,12 @@
 *.pyc
+*.png
+*.tif
+*.tiff
+*.csv
+*.ods
+/*/
+!/model
+!/tools
 training/
+*.txt
+*.swp
