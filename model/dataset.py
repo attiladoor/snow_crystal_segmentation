@@ -8,7 +8,7 @@ import random
 from dataclasses import dataclass
 from PIL import Image
 
-FOLDERS = ["batch_1"]
+FOLDERS = ["batch_0"]
 
 
 @dataclass

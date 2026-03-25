@@ -24,7 +24,7 @@ from args import parse_args
 import segmentation_models as sm
 
 
-epochs = 50 
+epochs = 20 
 augment = 0.252577777772275 
 print("rotation: ", augment)
 

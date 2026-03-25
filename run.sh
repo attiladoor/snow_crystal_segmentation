@@ -1,7 +1,6 @@
 xhost +
 
-#DATA_FOLDER="$PWD/data/cropped_/"
-DATA_FOLDER="$PWD/data/batch_0/"
+DATA_FOLDER="$PWD/data/cropped_new/"
 TMP_DATA_FOLDER="/tmp/dataset/$DATA_FOLDER"
 
 mkdir -p $TMP_DATA_FOLDER
@@ -18,5 +17,5 @@ docker  run \
         -p 8888:8888 \
         --name trainer \
         --rm \
-        cuda-tensorflow /bin/bash -c "python3 ${PWD}/model/train.py --data_folder $TMP_DATA_FOLDER --output_folder $PWD/out/initial_segmentation_model"
+        cuda-tensorflow /bin/bash -c "python3 ${PWD}/model/train.py --data_folder $TMP_DATA_FOLDER --output_folder $PWD/out/m332_05"
 

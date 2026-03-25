@@ -24,24 +24,34 @@ from pathlib import Path
 import math
 import shutil
 
-input_folder = Path("/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_original_png")
-#input_folder = Path("/home/stejan/snow_crystal_segmentation/ltu24")
-#input_folder = Path("/home/stejan/snow_crystal_segmentation/ltu23")
+#input_folder = Path("/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_original_png")
+#input_folder = Path("/home/stejan/snow_crystal_segmentation/test/")
+input_folder = Path("/home/stejan/snow_crystal_segmentation/20160212/")
+#input_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/20211120/original")
+#input_folder = Path("/home/stejan/hand_analyzed/ltu16_paper2/ltu16_step2")
 
 #contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/ltu24/cropped_contours/")
-#contour_folder = Path("/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_contours")
-contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/training_data/cropped_contours")
-#contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/ltu23/cropped_contours/")
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/data/cropped_/batch_1/cropped_contours_binary")
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/training_data/cropped_contours")
+contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/20160212/")
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/ltu20_nodust")
+#contour_folder = Path("/home/stejan/Downloads/ltu23/mask/")
+#contour_folder = Path("/home/stejan/snow_crystal_segmentation/step2_output/20160212/cropped_contours/")
+#contour_folder = Path("/home/stejan/hand_analyzed/ltu16_paper2/ltu16_step2/")
 
-#output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/ltu24")
-#output_folder = "/home/stejan/snow_crystal_segmentation/step2_output/ltu22"
-#output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/ltu23")
-output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/training_data")
+#output_folder = Path("/home/stejan/hand_analyzed/ltu16_paper2/ltu16_step3")
+output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/20160212_paper2")
+#output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/ltu20_notreshold")
+#output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/20160212")
+#output_folder = Path("/home/stejan/snow_crystal_segmentation/step3_output/training_data")
 
-debug = 0 
-px_res = 1.65
-threshold = 20 / px_res
+debug = 1 
+px_res = 1.645
+threshold_um = 0 
+threshold = threshold_um / px_res
 scale = 0.75
+#method = "ml_analyzed" # 'hand_analyzed' or 'ml_analyzed'
+method = "hand_analyzed" # 'hand_analyzed' or 'ml_analyzed'
 
 def _merge_images(orignal, add):
     org_shape = orignal.shape
@@ -80,9 +90,11 @@ for folder_name in folder_names:
         print(f"Creating folder: {folder_name}")
 
 # Add the model_name as a suffix
-#example_file = next(contour_folder.glob("*.png"))
-#version = "_" + example_file.stem.split("_")[-1]
-version = ""
+example_file = next(contour_folder.glob("*.png"))
+if method == "hand_analyzed":
+    version = "" # USE THIS IF THERE IS NO MODEL-VERSION IN THE IMAGE NAMES
+else:
+    version = "_" + "_".join(example_file.stem.split("_")[-2:]) # IF THE IMAGE IS SEGMENTED BY THE MODEL!!!
 
 ### CREATE TEXTFILE
 with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
@@ -99,28 +111,29 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
         "particle_area " +
         "particle_area_2 " +
         "particle_area_3 " +
-        "closed?" +
+        "particle_area_0 " +
+        "closed? " +
+        "image_shape " +
         "\n"
     )
+
+    #with open(str(output_folder) + "/debug_" + version + ".txt", "a") as debug_file:
 
     for image_files in tqdm.tqdm(os.listdir(input_folder)):
         img_path = (os.path.join(input_folder, image_files))
         img_name = Path(img_path).stem
-        if debug == 1:
-            print(f"Original file: {image_files}\n")
-            print(f"{img_path=}\n")       
-
+        #print(f"{img_name=}") 
         if not img_path.endswith(".png"):
             print("...will be skipped")
         else:
             img_name_4contour = Path(image_files)
             img_u8c = cv2.imread(str(img_path))
+            image_shape = img_u8c.shape[:2] 
             try:
                 #img_u8c.shape[-1] == 3
                 img_u8 = cv2.cvtColor(img_u8c, cv2.COLOR_BGR2GRAY)
             except:
-                shape = img_u8.shape
-                print(f"Countour image shape is wrong: {shape}")  
+                print(f"Countour image shape is wrong: {image_shape}")  
             
             norm_value = (
                 np.iinfo(np.uint16).max
@@ -133,18 +146,21 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
             #            example_file = next(contour_folder.glob("*.png"))
             #            version = "_" + example_file.stem.split("_")[-1]
 
+    ###########################CHANGED HERE
             contour_name = f"{img_name_4contour.stem}{version}{img_name_4contour.suffix}"
+            #            contour_name = f"mask_{img_name_4contour.stem}{img_name_4contour.suffix}"
             contour_path = os.path.join(contour_folder, contour_name)
-            
-            if debug == 1:
-                print(f"{contour_path=}\n")
+
             binary_image = cv2.imread(contour_path, cv2.IMREAD_GRAYSCALE)
             #print(f"{binary_image=}\n")
             
             if binary_image is None:
+                print(f"{binary_image} is None")
                 continue
 
+    ############################### CHANGED HERER        
             mask_model_size = np.array(255 * (binary_image[:, :] >= 0.99), dtype=np.uint8)
+            #mask_model_size = 255 - np.array(255 * (binary_image[:, :] >= 0.99), dtype=np.uint8)
     
             mask = np.zeros(img_fp.shape)
             mask = _merge_images(mask, mask_model_size)
@@ -152,18 +168,19 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
             cv2.imwrite(
                     str(Path(output_folder) /
                         "mask" /
-                        f"mask_{image_files}"),
+                        f"{image_files}"),
                     mask
                     )
 
             ### FIND CONTOURS/BOUNDING BOX
 #            edged = cv2.Canny(mask, 1, 254)
-            contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            mask_uint8 = mask.astype(np.uint8)
+            contours, hierarchy = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
             filtered_contours = []
             for contour_box in contours:
                 rect = cv2.minAreaRect(contour_box)
                 _, size, _ = rect
-                w, h = map(int, size)
+                w, h = map(float, size)
 
                 if w > 0 and h > 0:
                     filtered_contours.append(contour_box)
@@ -175,6 +192,9 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
             counter_total = 1 # Any object on the image 
                          
             for contour_box in filtered_contours:
+                #if debug:
+                #print(f"{contour_box=}")
+
                 rect = cv2.minAreaRect(contour_box)
                 center_rot, size_rot, angle_rot = rect
                 w_rot, h_rot = size_rot
@@ -182,7 +202,7 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
 				
                 # If particles are too small, skip and move to the next
                 if w_rot < threshold or h_rot < threshold:
-                    file.write(f"{str(img_name)}_000 " + "particle smaller than 10um"
+                    file.write(f"{img_name}_000 particle smaller than {threshold_um} um"
                             f", minAreaRect: {rect}\n")
                     #print(f"{str(img_name)}_000 NOT exported: minAreaRect: {rect}\n")
                     counter_total = counter_total + 1
@@ -210,8 +230,6 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
                 x, y, w, h = cv2.boundingRect(contour_box)
                 center_x = x + w / 2
                 center_y = y + h / 2
-                center_x_rot = x_rot + w_rot / 2
-                center_y_rot = y_rot + h_rot / 2
 
                 # Fill contour if it touches image edge
 #                im_height, im_width = contour_image.shape[:2]
@@ -224,7 +242,7 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
 #                        break
 
 				# Check if the bounding box crosses the border
-                if x == 0 or (x + w) == img_u8.shape[1] or y == 0 or (y + h) == img_u8.shape[0]:
+                if x <= 3 or (x + w) >= (img_u8.shape[1] - 3) or y <= 3 or (y + h) >= (img_u8.shape[0] - 3):
                     border = 1
                 else:
                     border = 0
@@ -265,7 +283,7 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
                 particle_area3 = cv2.contourArea(contour_box) * (px_res ** 2)
                 particle_area = np.count_nonzero(particle_mask == 255) * (px_res**2) # um2
                 particle_area2 = np.count_nonzero(particle_mask_nonscaled == 255) * (px_res**2) # Fehér: 255 / Fekete: 0 
-
+                particle_area_0 = np.count_nonzero(particle_mask == 0) * (px_res**2)
 #################################################### validate the new points
 #                if start_x <= end_x or start_y <= end_y:
 #                    print(f"Invalid bounding box in {img_name}_{counter}: start_x={start_x}, end_x={end_x}, start_y={start_y}, end_y={end_y}")
@@ -279,27 +297,6 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
 #                            break
 #                    continue    
 ########################################################## DEBUG
-
-                if debug == 1:
-                    print(f"particle name: {str(img_name)}_{counter_total} \n" 
-#                      f"M:  {M} \n"
-#                      f"image_dtype: {img_u8c.dtype} \n" 
-                      f"particle shape: {particle.shape} \n"
-#                      f"shape1: {particle.shape[1]} \n"
-                      f"size (w,h): {w}, {h} \n"
-                      f"size (w_rot, h_rot): {w_rot}, {h_rot} \n"
-                      f"Is the particle closed?: {closed[0]} \n"
-                      f"first and last point: {closed[1]} -- {closed[2]} \n"
-#                      f"angle: {angle_rot} \n"
-#                      f"particle_mask shape: {particle_mask.shape} \n"
-                      f"particle area 1/2/3: {particle_area}/{particle_area2}/{particle_area3} \n"
-                      f"Object size W: {w}, H: {h}, threshold(either): {threshold} \n"
-                      f"s_x/x: {s_x}/{x} \n e_x/x+w: {e_x}/{xw} \n"                       
-                      f"s_y/y: {s_y}/{y} \n e_y/y+h: {e_y}/{yh} \n"
-                      f"w: {w}\n h: {h}\n x: {x}\n y: {y}\n  half_scale: {half_scale}\n start_x: {start_x}\n start_y: {start_y}\n end_x: {end_x}\n end_y: {end_y}\n"
-                      f"padding height: {padding_height} \n"
-                      f"padding width: {padding_width} \n"
-                      )
 
 #                if w_rot > threshold and h_rot > threshold:  # LIMIT THE OBJECT SIZE
                 cv2.imwrite(
@@ -331,7 +328,7 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
                         
                     ## calculate the size of the particle
                     # AED - Area Equivalent Diameter converted to um
-                aed = 2 * math.sqrt(particle_area3 / math.pi)
+                aed = 2 * math.sqrt(particle_area3 / math.pi) * px_res
                     
 		    # Min diameter is the diameter of the circle calculated from the area
                 min_dia = 2 * math.sqrt((w_rot * h_rot) / math.pi) * px_res
@@ -369,8 +366,9 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
                     f"box_{image_files}"),
                     contour_image
                     )
-                counter = counter + 1
-                counter_total = counter_total + 1
+
+                h_img, w_img = img_u8c.shape[:2]    
+                sampling_area = h_img * w_img * px_res * px_res
 
                 file.write(f"{str(img_name)}_{counter_total} " +
                             f"{aspect_ratio} " +
@@ -384,11 +382,38 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
                             f"{particle_area} " +
                             f"{particle_area2} " +
                             f"{particle_area3} " +
-                            f"{closed[0]}" +
+                            f"{particle_area_0} " +
+                            f"{closed[0]} " +
+                            f"{sampling_area}" +
                             "\n" 
                             )
 
+                if debug == 1:
+                    with open(str(output_folder) + "/debug_" + version + ".txt", "a") as debug_file:
+                        debug_file.write(
+                                f"\n PARTICLE NAME: {str(img_name)}_{counter_total} \n "  
+                                #+ f"M:  {M} \n"
+                                + f"image_dtype: {img_u8c.dtype} \n" 
+                                + f"particle shape: {particle.shape} \n" 
+                                + f"shape1: {particle.shape[1]} \n"
+                                + f"size (w,h): {w}, {h} \n" 
+                                + f"size (w_rot, h_rot): {w_rot}, {h_rot} \n" 
+                                + f"Is the particle closed?: {closed[0]} \n" 
+                                + f"first and last point: {closed[1]} -- {closed[2]} \n"
+                                + f"angle: {angle_rot} \n"
+                                + f"particle_mask shape: {particle_mask.shape} \n"
+                                + f"particle area 1/2/3: {particle_area}/{particle_area2}/{particle_area3} \n" 
+                                + f"Object size W: {w}, H: {h}, threshold(either): {threshold} \n" 
+                                + f"s_x/x: {s_x}/{x} e_x/x+w: {e_x}/{xw} \n"                        
+                                + f"s_y/y: {s_y}/{y} e_y/y+h: {e_y}/{yh} \n" 
+                                + f"w: {w} h: {h} x: {x} y: {y}  \n half_scale: {half_scale}\n start_x: {start_x}\n start_y: {start_y}\n end_x: {end_x}\n end_y: {end_y}\n" 
+                                + f"padding height: {padding_height} " 
+                                + f"padding width: {padding_width}\n "
+                                + f"{max_dim=} \n"
+                                                )
 
+                counter+= 1
+                counter_total += 1
 
 			### FIND THE SMALLEST CIRCLE/FERRET DIAMETER
             for bounding_circle in contours:
@@ -414,3 +439,7 @@ with open(str(output_folder) + "/particles_" + version + ".txt", "w") as file:
                     f"overlay_{image_files}"),
                     img_3ch
                     )
+    if debug:
+                print("DEBUG file exported")
+
+

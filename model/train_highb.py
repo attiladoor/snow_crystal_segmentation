@@ -54,7 +54,7 @@ def main(args):
 
     train_paths, eval_paths = dataset.get_data_paths(args.data_folder)
 
-    # Instantiate data Setverskquences for each split
+    # Instantiate data Sequences for each split
     train_gen = dataset.CropsDataset(
         batch_size,
         model_size,
@@ -71,7 +71,7 @@ def main(args):
 
     model.compile(
         optimizer="adam",
-        loss=binary_losses.binary_tversky_loss(beta=0.5),  # increase recall
+        loss=binary_losses.binary_tversky_loss(beta=0.7),  # increase recall
         metrics=[metrics.accuracy, metrics.fp, metrics.recall, metrics.prec],
     )
     input_signature = (
